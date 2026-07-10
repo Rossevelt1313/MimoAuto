@@ -1,0 +1,4 @@
+# One proxy per line. Never commit proxy.txt.
+socks5://username:password@host:1080
+# socks5://host:1080
+# http://username:password@host:8080
