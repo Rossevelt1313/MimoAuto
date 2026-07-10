@@ -1,96 +1,188 @@
-# Xiaomi MiMo API Key Generator
+# MimoAuto
 
-CLI automation bot that registers Xiaomi accounts for MiMo API Platform, verifies OTP via temp mail or Gmail IMAP, joins the invite flow, and stores generated API keys.
+[![Build](https://github.com/Rossevelt1313/MimoAuto/actions/workflows/build.yml/badge.svg)](https://github.com/Rossevelt1313/MimoAuto/actions/workflows/build.yml)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+MimoAuto is a TypeScript CLI for automating the Xiaomi MiMo account setup flow. It handles browser registration, email verification, optional invite redemption, and API key extraction through Playwright.
+
+> This is an independent community project. It is not affiliated with, endorsed by, or maintained by Xiaomi.
 
 ## Features
 
-- **Xiaomi Registration**: Opens Xiaomi account registration for the MiMo API Platform callback flow.
-- **Temp Mail Flow**: Creates temporary inboxes and polls OTP codes automatically.
-- **Gmail IMAP Support**: Optional Gmail alias/IMAP OTP reader for reusable inbox setups.
-- **MiMo Invite Flow**: Uses the configured invite code and continues into the MiMo console.
-- **API Key Output**: Saves generated API keys to `output/success_keys.txt` using numbered `1. sk-xxxxx` format.
+- Xiaomi account registration through Playwright
+- OTP retrieval from temporary mail or Gmail IMAP
+- Standard browser mode and Chrome DevTools Protocol (CDP) mode
+- Optional HTTP and SOCKS5 proxy support with per-run rotation
+- Fresh browser context for each loop iteration
+- Cryptographically random password generation
+- Numbered API key output in `output/success_keys.txt`
+- Minimal terminal status display
+
+## How it works
+
+```text
+Create email
+    |
+Register Xiaomi account
+    |
+Retrieve and submit OTP
+    |
+Redeem invite code (optional)
+    |
+Create MiMo API key
+    |
+Save result locally
+```
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) 18 or newer.
-- A Gmail account with **2FA enabled** and an **App Password** if using Gmail IMAP.
-- A proxy is optional. The default path runs without one.
+- Node.js 18 or newer
+- npm
+- Google Chrome for CDP mode
+- Gmail with 2FA and an App Password only when using Gmail IMAP
 
 ## Installation
 
-1. Clone this repository:
-
-   ```bash
-   git clone https://github.com/Rossevelt1313/MimoAuto.git
-   cd MimoAuto
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm ci
-   ```
+```bash
+git clone https://github.com/Rossevelt1313/MimoAuto.git
+cd MimoAuto
+npm ci
+```
 
 ## Configuration
 
-1. Copy the example environment file and configure it:
+Copy the example environment file:
 
-   ```bash
-   cp .env.example .env
-   ```
+```bash
+cp .env.example .env
+```
 
-2. Open `.env` and fill in your details:
-   - `GMAIL_USERNAME`: Your base Gmail address (e.g., `yourname@gmail.com`).
-   - `GMAIL_APP_PASSWORD`: Your 16-character Gmail App Password. (Do NOT use your normal password. Generate one [here](https://myaccount.google.com/apppasswords)).
-   - `HEADLESS`: Set to `true` to run invisibly, or `false` if you want to watch the browser work.
-   - `MIMO_INVITE_CODE`: Optional MiMo invite code. Keep personal referral codes in `.env`, not source code.
+Windows Command Prompt:
 
-3. (Optional) Add a proxy:
-   Copy `proxy.txt.example` to `proxy.txt`, then add one proxy per line. Supported formats:
-   - `socks5://user:pass@host:port`
-   - `socks5://host:port`
-   - `http://user:pass@host:port`
-   - `user:pass@host:port`
-   - `ip:port`
-   - `ip:port:user:pass`
+```cmd
+copy .env.example .env
+```
 
-   At startup, choose whether the bot should use `proxy.txt`. The default is **No**. SOCKS5 authentication is bridged through a local HTTP proxy because Chromium does not support authenticated SOCKS5 directly. `ERR_TUNNEL_CONNECTION_FAILED` means the upstream proxy rejected or reset the tunnel; verify credentials, IP allowlisting, hostname support, protocol, and HTTPS access with the proxy provider.
+Available settings:
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `GMAIL_USERNAME` | Gmail mode only | Gmail address used to receive OTP messages |
+| `GMAIL_APP_PASSWORD` | Gmail mode only | Google App Password, not the regular account password |
+| `MIMO_INVITE_CODE` | No | MiMo invite code used during redemption |
+| `HEADLESS` | No | Set to `true` to hide the browser in standard mode |
+
+Keep real credentials in `.env`. The file is ignored by Git.
+
+### Proxy configuration
+
+Copy `proxy.txt.example` to `proxy.txt`, then place one proxy on each line. Supported formats:
+
+```text
+socks5://user:pass@host:port
+socks5://host:port
+http://user:pass@host:port
+user:pass@host:port
+ip:port
+ip:port:user:pass
+```
+
+Proxy use is disabled by default and selected at startup. Authenticated SOCKS5 proxies are routed through a local HTTP bridge because Chromium does not support SOCKS5 authentication directly.
 
 ## Usage
 
-### Development Mode
+### Standard mode
 
-To run the bot in development mode using `ts-node`:
+Run directly from TypeScript:
 
 ```bash
 npm run dev
 ```
 
-### Production Mode
-
-To build and run the compiled JavaScript:
+Or compile and run JavaScript:
 
 ```bash
 npm run build
 npm start
 ```
 
-### Loop/CDP Mode
+### CDP loop mode
+
+Start a separate Chrome instance with remote debugging enabled:
+
+```cmd
+start-chrome-debug.bat
+```
+
+Then run:
 
 ```bash
 npm run cdp
 ```
 
-If proxy use is enabled, each run launches a fresh proxied Chrome and rotates entries. Otherwise, the bot connects to Chrome on CDP port `9222`. See `CDP_QUICKSTART.md`.
+Without a proxy, MimoAuto connects to Chrome on port `9222`. With proxy mode enabled, it launches a fresh browser for every run and rotates entries from `proxy.txt`. See [CDP_QUICKSTART.md](CDP_QUICKSTART.md) for Windows setup and troubleshooting.
 
 ## Output
 
-- Generated API keys are saved to `output/success_keys.txt`.
-- Failed runs are saved to `output/failed_accounts.csv`.
+Runtime files stay inside `output/` and are excluded from Git.
 
-## Disclaimer
+| File | Contents |
+| --- | --- |
+| `output/success_keys.txt` | Numbered MiMo API keys |
+| `output/failed_accounts.csv` | Failed email and error details |
+| `output/otp-wait-timeout.png` | Debug screenshot when OTP entry times out |
+| `output/mimo-console.png` | Debug screenshot when key extraction fails |
 
-This project is for educational purposes only. Use responsibly and adhere to the terms of service of the targeted platforms.
+API keys and screenshots can contain sensitive account data. Store them securely and delete them when they are no longer needed.
+
+## Security
+
+- Account passwords are generated with Node.js `crypto.randomBytes()`.
+- Passwords and OTP values are not written to terminal logs or result files.
+- `.env`, `proxy.txt`, output files, screenshots, and build artifacts are ignored by Git.
+- TLS certificate validation remains enabled for browser and email connections.
+
+Never commit Gmail App Passwords, proxy credentials, generated API keys, or runtime screenshots.
+
+## Project structure
+
+```text
+src/
+  cdp-mode.ts     CDP loop entry point
+  cdp.ts          Chrome CDP connection
+  index.ts        Standard CLI entry point
+  otp-reader.ts   Gmail IMAP OTP reader
+  proxy.ts        Proxy parsing and SOCKS5 bridge
+  temp-mail.ts    Temporary inbox integration
+  tui.ts          Terminal status display
+  worker.ts       Registration and API key workflow
+```
+
+## Troubleshooting
+
+### CDP connection refused
+
+Start Chrome before running `npm run cdp`:
+
+```cmd
+start-chrome-debug.bat
+```
+
+Confirm that `http://127.0.0.1:9222/json/version` returns JSON.
+
+### Proxy tunnel failure
+
+`ERR_TUNNEL_CONNECTION_FAILED` usually means the upstream proxy rejected the connection. Verify its protocol, credentials, IP allowlist, hostname support, and HTTPS access.
+
+### Gmail OTP not found
+
+Confirm that IMAP access is available, 2FA is enabled, and `GMAIL_APP_PASSWORD` contains a valid Google App Password.
+
+## Responsible use
+
+Use this project only on accounts and systems you are authorized to access. Automated registration may be restricted by platform terms, rate limits, or abuse controls. You are responsible for complying with applicable terms and laws.
 
 ## License
 
-[MIT](LICENSE) — feel free to use, modify, and distribute.
+Distributed under the [MIT License](LICENSE).
